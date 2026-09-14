@@ -95,8 +95,8 @@ function router() {
   const hash = location.hash || "#/";
   updateNavActive();
   if (hash === "#/" || hash === "") renderIndex();
+  else if (hash === "#/lager") renderIndex({ view: "storage" });
   else if (hash === "#/add") renderAdd();
-  else if (hash === "#/lager") renderLager();
   else if (hash === "#/preise") renderPreise();
   else if (hash === "#/dashboard") renderDashboard();
   else if (hash.startsWith("#/produkt/")) renderProdukt(hash.split("/")[2]);
@@ -161,26 +161,263 @@ function euro(n) {
 }
 
 // ---------------------------------------------------------------------
-// Übersicht
+// Übersicht: Filter (Suche, Größe, Duft, Lagerort) + 4 Ansichten
+// (Größere Kacheln / Kleine Kacheln / Liste / Nach Lagerort)
 // ---------------------------------------------------------------------
-async function renderIndex() {
+const VIEW_KEY = "produkt-view";
+let currentView = "grid";
+try {
+  const saved = localStorage.getItem(VIEW_KEY);
+  currentView = ["grid", "cube", "list", "storage"].includes(saved) ? saved : "grid";
+} catch (_) {}
+
+let msOutsideClickBound = false;
+function ensureMsOutsideClickHandler() {
+  if (msOutsideClickBound) return;
+  msOutsideClickBound = true;
+  document.addEventListener("click", (e) => {
+    document.querySelectorAll(".ms-filter[open]").forEach((details) => {
+      if (!details.contains(e.target)) details.open = false;
+    });
+  });
+}
+function updateMsCount(details) {
+  if (!details) return;
+  const boxes = Array.from(details.querySelectorAll('input[type="checkbox"]'));
+  const checked = boxes.filter((b) => b.checked).length;
+  const countEl = details.querySelector(".ms-count");
+  if (countEl) countEl.textContent = checked === boxes.length ? "" : `(${checked}/${boxes.length})`;
+}
+function updateAllMsCounts() {
+  ["groesse-filter", "duft-filter", "lagerort-filter"].forEach((id) => updateMsCount(document.getElementById(id)));
+}
+function buildMultiSelectFilter(detailsId, inputName, options) {
+  const details = document.getElementById(detailsId);
+  if (!details) return;
+  const optionsBox = details.querySelector(".ms-options");
+  if (options.length === 0) {
+    optionsBox.innerHTML = `<span class="muted" style="padding:4px 6px;">Keine Werte vorhanden</span>`;
+    return;
+  }
+  optionsBox.innerHTML =
+    `<div class="ms-actions"><button type="button" class="ms-all">Alle</button><button type="button" class="ms-none">Keine</button></div>` +
+    options.map((o) => `<label><input type="checkbox" name="${inputName}" value="${escapeHtml(o.value)}" checked> ${escapeHtml(o.label)}</label>`).join("");
+  updateMsCount(details);
+  optionsBox.querySelector(".ms-all").addEventListener("click", () => {
+    details.querySelectorAll(`input[name="${inputName}"]`).forEach((b) => (b.checked = true));
+    updateMsCount(details);
+    document.getElementById("filter-form").dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  optionsBox.querySelector(".ms-none").addEventListener("click", () => {
+    details.querySelectorAll(`input[name="${inputName}"]`).forEach((b) => (b.checked = false));
+    updateMsCount(details);
+    document.getElementById("filter-form").dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  ensureMsOutsideClickHandler();
+}
+function populateFilters(items) {
+  const groessen = [...new Set(items.map((i) => i.variante_groesse).filter(Boolean))].sort();
+  buildMultiSelectFilter("groesse-filter", "groesse", groessen.map((g) => ({ value: g, label: g })));
+  const duefte = [...new Set(items.map((i) => i.variante_duft).filter(Boolean))].sort();
+  buildMultiSelectFilter("duft-filter", "duft", duefte.map((d) => ({ value: d, label: d })));
+  const vorhandeneOrte = new Set(items.map((i) => i.lagerort_bereich).filter(Boolean));
+  const orte = LAGERORTE.filter((l) => vorhandeneOrte.has(l));
+  buildMultiSelectFilter("lagerort-filter", "lagerort", orte.map((l) => ({ value: l, label: l })));
+}
+
+function renderFilterChips({ q, groessen, allGroesseCount, duefte, allDuftCount, lagerorte, allLagerortCount }) {
+  const box = document.getElementById("filter-chips");
+  if (!box) return;
+  const chips = [];
+  if (q) chips.push({ label: `Suche: "${q}"`, clear: () => (document.getElementById("q-input").value = "") });
+  if (groessen.length < allGroesseCount)
+    chips.push({ label: `Größe: ${groessen.join(", ") || "keine"}`, clear: () => setMsAll("groesse-filter", "groesse") });
+  if (duefte.length < allDuftCount)
+    chips.push({ label: `Duft: ${duefte.join(", ") || "keine"}`, clear: () => setMsAll("duft-filter", "duft") });
+  if (lagerorte.length < allLagerortCount)
+    chips.push({ label: `Lagerort: ${lagerorte.join(", ") || "keine"}`, clear: () => setMsAll("lagerort-filter", "lagerort") });
+  if (chips.length === 0) {
+    box.classList.add("hidden");
+    box.innerHTML = "";
+    return;
+  }
+  box.classList.remove("hidden");
+  box.innerHTML = chips.map((c, idx) => `<span class="filter-chip">${escapeHtml(c.label)} <button type="button" data-idx="${idx}">✕</button></span>`).join("");
+  box.querySelectorAll("button").forEach((btn, idx) => {
+    btn.addEventListener("click", () => {
+      chips[idx].clear();
+      updateAllMsCounts();
+      document.getElementById("filter-form").dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
+}
+function setMsAll(detailsId, inputName) {
+  const details = document.getElementById(detailsId);
+  if (!details) return;
+  details.querySelectorAll(`input[name="${inputName}"]`).forEach((b) => (b.checked = true));
+}
+
+function setView(view) {
+  currentView = view;
+  try { localStorage.setItem(VIEW_KEY, view); } catch (_) {}
+  updateViewButtons();
+  renderCurrentItems();
+}
+function updateViewButtons() {
+  const gridBtn = document.getElementById("view-grid-btn");
+  const cubeBtn = document.getElementById("view-cube-btn");
+  const listBtn = document.getElementById("view-list-btn");
+  const storageBtn = document.getElementById("view-storage-btn");
+  const listHeader = document.getElementById("list-header");
+  const grid = document.getElementById("grid");
+  const storageView = document.getElementById("storage-view");
+  if (!gridBtn) return;
+  gridBtn.classList.toggle("active", currentView === "grid");
+  cubeBtn.classList.toggle("active", currentView === "cube");
+  listBtn.classList.toggle("active", currentView === "list");
+  storageBtn.classList.toggle("active", currentView === "storage");
+  const indicator = document.getElementById("view-toggle-indicator");
+  if (indicator) {
+    const idx = { grid: 0, cube: 1, list: 2, storage: 3 }[currentView] ?? 0;
+    indicator.style.transform = `translateX(${idx * 100}%)`;
+  }
+  if (listHeader) listHeader.classList.toggle("hidden", currentView !== "list");
+  if (grid) {
+    grid.classList.toggle("cube", currentView === "cube");
+    grid.classList.toggle("list", currentView === "list");
+    grid.classList.toggle("hidden", currentView === "storage");
+  }
+  if (storageView) storageView.classList.toggle("hidden", currentView !== "storage");
+}
+
+let currentFilteredItems = [];
+function renderCurrentItems() {
+  renderItemsForView(currentFilteredItems);
+}
+
+function produktCardHtml(it) {
+  const low = it.bestand <= 0;
+  return `<a href="#/produkt/${it.id}" class="item-card">
+    <div class="item-photo">${it.foto_url ? `<img src="${it.foto_url}" alt="">` : `<span class="photo-placeholder">📦</span>`}</div>
+    <div class="item-card-body">
+      <div class="item-card-title">${escapeHtml(it.name)}</div>
+      <div class="item-card-sub">${escapeHtml(varianteLabel(it)) || "&nbsp;"}</div>
+      <div class="item-card-sub">${escapeHtml(lagerortLabel(it)) || "kein Lagerort"}</div>
+      <div class="item-card-footer">
+        <span class="bestand-badge ${low ? "bestand-low" : ""}">Bestand: ${it.bestand}</span>
+        <span>${euro(it.verkaufspreis)}</span>
+      </div>
+    </div>
+  </a>`;
+}
+function produktCubeHtml(it) {
+  const low = it.bestand <= 0;
+  return `<div class="cube-card">
+    <a class="cube-card-link" href="#/produkt/${it.id}">
+      <div class="cube-card-photo">${it.foto_url ? `<img src="${it.foto_url}" alt="">` : `<div class="no-photo">📦</div>`}</div>
+      <div class="cube-card-body">
+        <div class="cube-card-title">${escapeHtml(it.name)}</div>
+        <div class="cube-card-console">${escapeHtml(varianteLabel(it))}</div>
+        <div class="cube-card-price">${euro(it.verkaufspreis)}</div>
+        <span class="bestand-badge ${low ? "bestand-low" : ""}" style="margin-top:3px;display:inline-block;">Bestand: ${it.bestand}</span>
+      </div>
+    </a>
+  </div>`;
+}
+function produktListRowHtml(it) {
+  const low = it.bestand <= 0;
+  return `<a href="#/produkt/${it.id}" class="list-row produkt-row">
+    <span class="list-title">${escapeHtml(it.name)}</span>
+    <span class="list-console">${escapeHtml(varianteLabel(it)) || "–"}</span>
+    <span class="list-console">${escapeHtml(lagerortLabel(it)) || "–"}</span>
+    <span class="bestand-badge ${low ? "bestand-low" : ""}">${it.bestand}</span>
+    <span class="list-price">${euro(it.verkaufspreis)}</span>
+  </a>`;
+}
+
+function renderItemsForView(items) {
+  const grid = document.getElementById("grid");
+  const storageContainer = document.getElementById("storage-view");
+  const empty = document.getElementById("empty-state");
+  const itemCountEl = document.getElementById("item-count");
+  if (itemCountEl) itemCountEl.textContent = `${items.length} Produkt${items.length === 1 ? "" : "e"}`;
+
+  if (items.length === 0) {
+    grid.innerHTML = "";
+    storageContainer.innerHTML = "";
+    empty.classList.remove("hidden");
+    empty.innerHTML = `<div class="empty-state-icon">📦</div><p>Keine Produkte gefunden.</p><a class="btn-primary" href="#/add">+ Produkt anlegen</a>`;
+    return;
+  }
+  empty.classList.add("hidden");
+
+  if (currentView === "storage") {
+    const groups = {};
+    items.forEach((it) => {
+      const key = it.lagerort_bereich || "Ohne Lagerort";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(it);
+    });
+    const order = [...LAGERORTE, "Ohne Lagerort"].filter((k) => groups[k]?.length);
+    storageContainer.innerHTML = order
+      .map(
+        (key) => `<div class="storage-group">
+          <div class="storage-group-header"><span>${escapeHtml(key)}</span><span class="storage-group-count">${groups[key].length} Produkt${groups[key].length === 1 ? "" : "e"}</span></div>
+          <div class="storage-group-items">${groups[key].map(produktListRowHtml).join("")}</div>
+        </div>`
+      )
+      .join("");
+    return;
+  }
+  if (currentView === "cube") {
+    grid.innerHTML = items.map(produktCubeHtml).join("");
+    return;
+  }
+  if (currentView === "list") {
+    grid.innerHTML = items.map(produktListRowHtml).join("");
+    return;
+  }
+  grid.innerHTML = items.map(produktCardHtml).join("");
+}
+
+async function renderIndex(preset) {
   mount("tpl-index");
+  if (preset?.view) {
+    currentView = preset.view;
+    try { localStorage.setItem(VIEW_KEY, currentView); } catch (_) {}
+  }
   const { produkte, buchungen, verkaeufe } = await loadAll();
   const items = produkte.map((p) => ({
     ...p,
     bestand: bestandFuer(p.id, buchungen, verkaeufe),
     verkauft: verkauftGesamt(p.id, verkaeufe),
   }));
+  populateFilters(items);
+  updateViewButtons();
 
   const form = document.getElementById("filter-form");
   function apply() {
-    const q = (document.getElementById("q-input").value || "").toLowerCase().trim();
+    const fd = new FormData(form);
+    const q = (fd.get("q") || "").toString().toLowerCase().trim();
+    const groessen = fd.getAll("groesse").map(String);
+    const duefte = fd.getAll("duft").map(String);
+    const lagerorte = fd.getAll("lagerort").map(String);
+    const allGroesseCount = form.querySelectorAll('input[name="groesse"]').length;
+    const allDuftCount = form.querySelectorAll('input[name="duft"]').length;
+    const allLagerortCount = form.querySelectorAll('input[name="lagerort"]').length;
     const sort = form.sort.value;
+
+    renderFilterChips({ q, groessen, allGroesseCount, duefte, allDuftCount, lagerorte, allLagerortCount });
+
     let filtered = items.filter((it) => {
-      if (!q) return true;
-      return [it.name, it.variante_groesse, it.variante_duft, it.variante_farbe]
-        .filter(Boolean)
-        .some((v) => v.toLowerCase().includes(q));
+      if (allGroesseCount > 0 && groessen.length < allGroesseCount && !groessen.includes(it.variante_groesse || "")) return false;
+      if (allDuftCount > 0 && duefte.length < allDuftCount && !duefte.includes(it.variante_duft || "")) return false;
+      if (allLagerortCount > 0 && lagerorte.length < allLagerortCount && !lagerorte.includes(it.lagerort_bereich || "")) return false;
+      if (q) {
+        const hay = [it.name, it.variante_groesse, it.variante_duft, it.variante_farbe].filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
     });
     filtered.sort((a, b) => {
       if (sort === "name_asc") return a.name.localeCompare(b.name);
@@ -190,42 +427,15 @@ async function renderIndex() {
       if (sort === "verkauft_desc") return b.verkauft - a.verkauft;
       return 0;
     });
-    renderGrid(filtered);
-    document.getElementById("item-count").textContent = `${filtered.length} Produkt${filtered.length === 1 ? "" : "e"}`;
+    currentFilteredItems = filtered;
+    renderItemsForView(filtered);
   }
-  form.addEventListener("input", apply);
-  form.addEventListener("change", apply);
+  form.addEventListener("input", () => { updateAllMsCounts(); apply(); });
+  document.getElementById("view-grid-btn").addEventListener("click", () => setView("grid"));
+  document.getElementById("view-cube-btn").addEventListener("click", () => setView("cube"));
+  document.getElementById("view-list-btn").addEventListener("click", () => setView("list"));
+  document.getElementById("view-storage-btn").addEventListener("click", () => setView("storage"));
   apply();
-}
-
-function renderGrid(items) {
-  const grid = document.getElementById("grid");
-  const empty = document.getElementById("empty-state");
-  grid.innerHTML = "";
-  if (items.length === 0) {
-    empty.classList.remove("hidden");
-    empty.innerHTML = `<p>Noch keine Produkte gefunden.</p><a href="#/add" class="btn-primary">+ Produkt anlegen</a>`;
-    return;
-  }
-  empty.classList.add("hidden");
-  items.forEach((it) => {
-    const card = document.createElement("a");
-    card.href = `#/produkt/${it.id}`;
-    card.className = "item-card";
-    const low = it.bestand <= 0;
-    card.innerHTML = `
-      <div class="item-photo">${it.foto_url ? `<img src="${it.foto_url}" alt="">` : `<span class="photo-placeholder">📦</span>`}</div>
-      <div class="item-card-body">
-        <div class="item-card-title">${escapeHtml(it.name)}</div>
-        <div class="item-card-sub">${escapeHtml(varianteLabel(it)) || "&nbsp;"}</div>
-        <div class="item-card-sub">${escapeHtml(lagerortLabel(it)) || "kein Lagerort"}</div>
-        <div class="item-card-footer">
-          <span class="bestand-badge ${low ? "bestand-low" : ""}">Bestand: ${it.bestand}</span>
-          <span>${euro(it.verkaufspreis)}</span>
-        </div>
-      </div>`;
-    grid.appendChild(card);
-  });
 }
 
 function escapeHtml(s) {
@@ -406,46 +616,6 @@ async function renderProdukt(id) {
         .map((r) => `<tr><td>${r.datum}</td><td>${r.typ}</td><td>${r.text}</td></tr>`)
         .join("")}</tbody></table>`
     : `<p class="muted">Noch kein Verlauf.</p>`;
-}
-
-// ---------------------------------------------------------------------
-// Lageransicht
-// ---------------------------------------------------------------------
-async function renderLager() {
-  mount("tpl-lager");
-  const { produkte, buchungen, verkaeufe } = await loadAll();
-  const groups = {};
-  produkte.forEach((p) => {
-    const key = p.lagerort_bereich || "Ohne Lagerort";
-    if (!groups[key]) groups[key] = [];
-    groups[key].push({ ...p, bestand: bestandFuer(p.id, buchungen, verkaeufe) });
-  });
-  const container = document.getElementById("storage-view");
-  const order = [...LAGERORTE, "Ohne Lagerort"];
-  container.innerHTML = order
-    .filter((k) => groups[k]?.length)
-    .map((k) => {
-      const items = groups[k];
-      return `<div class="storage-group">
-        <h2>${k} <span class="muted">(${items.length})</span></h2>
-        <div class="grid">
-          ${items
-            .map(
-              (it) => `<a href="#/produkt/${it.id}" class="item-card">
-                <div class="item-photo">${it.foto_url ? `<img src="${it.foto_url}" alt="">` : `<span class="photo-placeholder">📦</span>`}</div>
-                <div class="item-card-body">
-                  <div class="item-card-title">${escapeHtml(it.name)}</div>
-                  <div class="item-card-sub">${escapeHtml(it.lagerort_detail || "")}</div>
-                  <div class="item-card-footer"><span class="bestand-badge ${it.bestand <= 0 ? "bestand-low" : ""}">Bestand: ${it.bestand}</span></div>
-                </div>
-              </a>`
-            )
-            .join("")}
-        </div>
-      </div>`;
-    })
-    .join("");
-  if (!container.innerHTML) container.innerHTML = `<p class="muted">Noch keine Produkte vorhanden.</p>`;
 }
 
 // ---------------------------------------------------------------------

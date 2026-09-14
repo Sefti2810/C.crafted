@@ -66,6 +66,18 @@
       <span class="search-icon">🔍</span>
       <input type="text" name="q" id="q-input" placeholder="Suche: Name, Duft, Farbe…">
     </div>
+    <details class="ms-filter" id="groesse-filter">
+      <summary>Größe <span class="ms-count"></span></summary>
+      <div class="ms-options"></div>
+    </details>
+    <details class="ms-filter" id="duft-filter">
+      <summary>Duft <span class="ms-count"></span></summary>
+      <div class="ms-options"></div>
+    </details>
+    <details class="ms-filter" id="lagerort-filter">
+      <summary>Lagerort <span class="ms-count"></span></summary>
+      <div class="ms-options"></div>
+    </details>
     <select name="sort">
       <option value="name_asc">Name A–Z</option>
       <option value="name_desc">Name Z–A</option>
@@ -76,8 +88,20 @@
   </form>
   <div class="list-toolbar">
     <div class="item-count" id="item-count"></div>
+    <div class="view-toggle" role="group" aria-label="Ansicht">
+      <span class="view-toggle-indicator" id="view-toggle-indicator"></span>
+      <button type="button" id="view-grid-btn" class="view-btn" title="Größere Kacheln">🔲</button>
+      <button type="button" id="view-cube-btn" class="view-btn" title="Kleine Kacheln">🧊</button>
+      <button type="button" id="view-list-btn" class="view-btn" title="Liste">📋</button>
+      <button type="button" id="view-storage-btn" class="view-btn" title="Nach Lagerort gruppiert">🗄️</button>
+    </div>
+  </div>
+  <div id="filter-chips" class="filter-chips hidden"></div>
+  <div id="list-header" class="list-header produkt-list-header hidden">
+    <span>Name</span><span>Variante</span><span>Lagerort</span><span>Bestand</span><span>Preis</span>
   </div>
   <div id="grid" class="grid"></div>
+  <div id="storage-view" class="storage-view hidden"></div>
   <div id="empty-state" class="empty-state hidden"></div>
 </template>
 
@@ -172,11 +196,6 @@
       <button type="submit" class="btn-danger">Produkt löschen</button>
     </form>
   </div>
-</template>
-
-<template id="tpl-lager">
-  <h1>🗄️ Lageransicht</h1>
-  <div id="storage-view" class="storage-view"></div>
 </template>
 
 <template id="tpl-preise">

@@ -1040,3 +1040,12 @@ h1 { font-size: 1.4rem; margin-bottom: 16px; font-family: var(--font-display); f
 }
 
 #preise-table th, #preise-table td { text-align: left; }
+
+/* Listen-/Lageransicht für Produkte: eigene Spaltenaufteilung (kein Foto,
+   dafür Lagerort + Bestand als eigene Spalten) statt der 8-spaltigen
+   Spiele-Variante. */
+.list-header.produkt-list-header,
+.list-row.produkt-row {
+  grid-template-columns: 2fr 1.3fr 1.2fr 90px 90px;
+}
+.list-row.produkt-row .bestand-badge { justify-self: start; }
