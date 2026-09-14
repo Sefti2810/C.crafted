@@ -297,22 +297,32 @@ function renderCurrentItems() {
 
 function produktCardHtml(it) {
   const low = it.bestand <= 0;
-  return `<a href="#/produkt/${it.id}" class="item-card">
-    <div class="item-photo">${it.foto_url ? `<img src="${it.foto_url}" alt="">` : `<span class="photo-placeholder">📦</span>`}</div>
-    <div class="item-card-body">
-      <div class="item-card-title">${escapeHtml(it.name)}</div>
-      <div class="item-card-sub">${escapeHtml(varianteLabel(it)) || "&nbsp;"}</div>
-      <div class="item-card-sub">${escapeHtml(lagerortLabel(it)) || "kein Lagerort"}</div>
-      <div class="item-card-footer">
-        <span class="bestand-badge ${low ? "bestand-low" : ""}">Bestand: ${it.bestand}</span>
-        <span>${euro(it.verkaufspreis)}</span>
+  return `<div class="item-card">
+    <a class="item-card-link" href="#/produkt/${it.id}">
+      <div class="item-photo">${it.foto_url ? `<img src="${it.foto_url}" alt="">` : `<span class="photo-placeholder">📦</span>`}</div>
+      <div class="item-card-body">
+        <div class="item-card-title">${escapeHtml(it.name)}</div>
+        <div class="item-card-sub">${escapeHtml(varianteLabel(it)) || "&nbsp;"}</div>
+        <div class="item-card-sub">${escapeHtml(lagerortLabel(it)) || "kein Lagerort"}</div>
+        <div class="item-card-footer">
+          <span class="bestand-badge ${low ? "bestand-low" : ""}">Bestand: ${it.bestand}</span>
+          <span>${euro(it.verkaufspreis)}</span>
+        </div>
       </div>
+    </a>
+    <div class="bestand-stepper">
+      <button type="button" class="bestand-minus" data-id="${it.id}" title="1 Stück verkauft eintragen">−</button>
+      <button type="button" class="bestand-plus" data-id="${it.id}" title="1 Stück zubuchen">+</button>
     </div>
-  </a>`;
+  </div>`;
 }
 function produktCubeHtml(it) {
   const low = it.bestand <= 0;
   return `<div class="cube-card">
+    <span class="cube-stepper">
+      <button type="button" class="bestand-minus" data-id="${it.id}" title="1 Stück verkauft eintragen">−</button>
+      <button type="button" class="bestand-plus" data-id="${it.id}" title="1 Stück zubuchen">+</button>
+    </span>
     <a class="cube-card-link" href="#/produkt/${it.id}">
       <div class="cube-card-photo">${it.foto_url ? `<img src="${it.foto_url}" alt="">` : `<div class="no-photo">📦</div>`}</div>
       <div class="cube-card-body">
@@ -326,13 +336,59 @@ function produktCubeHtml(it) {
 }
 function produktListRowHtml(it) {
   const low = it.bestand <= 0;
-  return `<a href="#/produkt/${it.id}" class="list-row produkt-row">
-    <span class="list-title">${escapeHtml(it.name)}</span>
-    <span class="list-console">${escapeHtml(varianteLabel(it)) || "–"}</span>
-    <span class="list-console">${escapeHtml(lagerortLabel(it)) || "–"}</span>
-    <span class="bestand-badge ${low ? "bestand-low" : ""}">${it.bestand}</span>
-    <span class="list-price">${euro(it.verkaufspreis)}</span>
-  </a>`;
+  return `<div class="list-row produkt-row">
+    <a class="list-row-link" href="#/produkt/${it.id}">
+      <span class="list-title">${escapeHtml(it.name)}</span>
+      <span class="list-console">${escapeHtml(varianteLabel(it)) || "–"}</span>
+      <span class="list-console">${escapeHtml(lagerortLabel(it)) || "–"}</span>
+      <span class="bestand-badge ${low ? "bestand-low" : ""}">${it.bestand}</span>
+      <span class="list-price">${euro(it.verkaufspreis)}</span>
+    </a>
+    <span class="bestand-stepper bestand-stepper-inline">
+      <button type="button" class="bestand-minus" data-id="${it.id}" title="1 Stück verkauft eintragen">−</button>
+      <button type="button" class="bestand-plus" data-id="${it.id}" title="1 Stück zubuchen">+</button>
+    </span>
+  </div>`;
+}
+
+// Schnellbuchung direkt in der Übersicht: ➕ bucht 1 Stück Produktion zu,
+// ➖ trägt 1 Stück Verkauf ein - ohne das Produkt öffnen zu müssen.
+let allItemsMap = new Map();
+let stepperBound = false;
+function ensureStepperHandler() {
+  if (stepperBound) return;
+  stepperBound = true;
+  document.getElementById("main").addEventListener("click", async (e) => {
+    const plusBtn = e.target.closest(".bestand-plus");
+    const minusBtn = e.target.closest(".bestand-minus");
+    if (!plusBtn && !minusBtn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const btn = plusBtn || minusBtn;
+    const id = btn.dataset.id;
+    const item = allItemsMap.get(id);
+    if (!item) return;
+    if (minusBtn && item.bestand <= 0) {
+      flash("⚠️ Kein Bestand mehr vorhanden.");
+      return;
+    }
+    btn.disabled = true;
+    if (plusBtn) {
+      const { error } = await supabase.from("bestandsbuchungen").insert({ produkt_id: id, menge: 1 });
+      btn.disabled = false;
+      if (error) { flash("⚠️ " + error.message); return; }
+      item.bestand += 1;
+      flash(`+1 zu „${item.name}“ gebucht.`);
+    } else {
+      const { error } = await supabase.from("verkaeufe").insert({ produkt_id: id, menge: 1 });
+      btn.disabled = false;
+      if (error) { flash("⚠️ " + error.message); return; }
+      item.bestand -= 1;
+      item.verkauft = (item.verkauft || 0) + 1;
+      flash(`1× „${item.name}“ als verkauft eingetragen.`);
+    }
+    renderItemsForView(currentFilteredItems);
+  });
 }
 
 function renderItemsForView(items) {
@@ -394,6 +450,8 @@ async function renderIndex(preset) {
   }));
   populateFilters(items);
   updateViewButtons();
+  allItemsMap = new Map(items.map((it) => [it.id, it]));
+  ensureStepperHandler();
 
   const form = document.getElementById("filter-form");
   function apply() {
