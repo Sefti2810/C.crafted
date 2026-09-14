@@ -512,7 +512,13 @@ function renderAdd() {
     const status = document.getElementById("save-status");
     status.textContent = "Speichere…";
     const fd = new FormData(form);
+    // ID selbst erzeugen statt sie per .select() nach dem Insert erst
+    // zurückzuholen - so kennen wir sie auch dann sicher, wenn die Antwort
+    // auf den Insert-Request mal wegen einer Netzwerkstörung verloren geht,
+    // und können Ist-Bestand/Preis/Foto trotzdem zuverlässig anhängen.
+    const newId = crypto.randomUUID();
     const payload = {
+      id: newId,
       name: fd.get("name").trim(),
       variante_groesse: fd.get("variante_groesse")?.trim() || null,
       variante_duft: fd.get("variante_duft")?.trim() || null,
@@ -522,27 +528,38 @@ function renderAdd() {
       lagerort_bereich: fd.get("lagerort_bereich") || null,
       lagerort_detail: fd.get("lagerort_detail")?.trim() || null,
     };
-    const { data: inserted, error } = await supabase.from("produkte").insert(payload).select().single();
-    if (error) {
-      status.textContent = "⚠️ " + error.message;
+    const { error: produktFehler } = await supabase.from("produkte").insert(payload);
+    if (produktFehler) {
+      status.textContent = "⚠️ " + produktFehler.message;
       return;
     }
-    // Anfangspreis in Preishistorie loggen
+
+    const folgeFehler = [];
     if (payload.verkaufspreis > 0) {
-      await supabase.from("preishistorie").insert({ produkt_id: inserted.id, preis: payload.verkaufspreis });
+      const { error } = await supabase.from("preishistorie").insert({ produkt_id: newId, preis: payload.verkaufspreis });
+      if (error) folgeFehler.push("Preis: " + error.message);
     }
-    // Ist-Bestand als erste Produktions-Buchung anlegen
     const istbestand = Number(fd.get("istbestand"));
     if (istbestand > 0) {
-      await supabase.from("bestandsbuchungen").insert({ produkt_id: inserted.id, menge: istbestand, notiz: "Anfangsbestand" });
+      const { error } = await supabase.from("bestandsbuchungen").insert({ produkt_id: newId, menge: istbestand, notiz: "Anfangsbestand" });
+      if (error) folgeFehler.push("Ist-Bestand: " + error.message);
     }
     const fotoFile = document.getElementById("f-foto").files[0];
     if (fotoFile) {
-      const url = await uploadFoto(inserted.id, fotoFile);
-      if (url) await supabase.from("produkte").update({ foto_url: url }).eq("id", inserted.id);
+      const url = await uploadFoto(newId, fotoFile);
+      if (url) {
+        const { error } = await supabase.from("produkte").update({ foto_url: url }).eq("id", newId);
+        if (error) folgeFehler.push("Foto: " + error.message);
+      }
     }
-    flash("Produkt angelegt.");
-    location.hash = "#/";
+
+    if (folgeFehler.length > 0) {
+      status.textContent = "⚠️ Produkt angelegt, aber nicht alles hat geklappt: " + folgeFehler.join(" · ");
+      flash("Produkt angelegt – bitte Fehler unten prüfen.");
+    } else {
+      flash("Produkt angelegt.");
+      location.hash = "#/";
+    }
   });
 }
 
