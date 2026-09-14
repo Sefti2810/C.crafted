@@ -531,6 +531,11 @@ function renderAdd() {
     if (payload.verkaufspreis > 0) {
       await supabase.from("preishistorie").insert({ produkt_id: inserted.id, preis: payload.verkaufspreis });
     }
+    // Ist-Bestand als erste Produktions-Buchung anlegen
+    const istbestand = Number(fd.get("istbestand"));
+    if (istbestand > 0) {
+      await supabase.from("bestandsbuchungen").insert({ produkt_id: inserted.id, menge: istbestand, notiz: "Anfangsbestand" });
+    }
     const fotoFile = document.getElementById("f-foto").files[0];
     if (fotoFile) {
       const url = await uploadFoto(inserted.id, fotoFile);
