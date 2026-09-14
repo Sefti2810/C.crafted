@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Produkt-Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#b5652c">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2213%22 font-size=%2214%22>📦</text></svg>">
+<script>
+// Frueh (vor dem CSS-Rendering) gespeicherten Dark-Mode anwenden, damit die Seite
+// nicht kurz hell aufblitzt, bevor auf dunkel umgeschaltet wird.
+(function () {
+  try {
+    var saved = localStorage.getItem("produkt-theme");
+    if (saved === "dark" || saved === "light") {
+      document.documentElement.setAttribute("data-theme", saved);
+    }
+  } catch (e) {}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Login -->
+<section id="view-login" class="view">
+  <div class="login-box">
+    <h1>📦 Produkt-Tracker</h1>
+    <p class="muted">Bitte anmelden.</p>
+    <form id="login-form">
+      <label>E-Mail<input type="email" id="login-email" required autocomplete="username"></label>
+      <label>Passwort<input type="password" id="login-password" required autocomplete="current-password"></label>
+      <button type="submit" class="btn-primary">Anmelden</button>
+      <div id="login-error" class="status-text error"></div>
+    </form>
+  </div>
+</section>
+
+<!-- App shell -->
+<div id="app-shell" class="hidden">
+  <header class="topbar">
+    <a class="brand" href="#/">📦 Produkt-Tracker</a>
+    <nav>
+      <button id="theme-toggle" class="link-btn" type="button" title="Darstellung wechseln">🌙</button>
+    </nav>
+  </header>
+  <div id="flash" class="flash hidden"></div>
+  <main id="main"></main>
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Hauptnavigation">
+    <a href="#/" class="bottom-nav-item" title="Übersicht"><span class="bottom-nav-icon">🏠</span></a>
+    <a href="#/lager" class="bottom-nav-item" title="Lager"><span class="bottom-nav-icon">🗄️</span></a>
+    <a href="#/add" class="bottom-nav-item bottom-nav-add" title="Artikel hinzufügen"><span class="bottom-nav-icon">➕</span></a>
+    <a href="#/preise" class="bottom-nav-item" title="Preisliste"><span class="bottom-nav-icon">🏷️</span></a>
+    <a href="#/dashboard" class="bottom-nav-item" title="Dashboard"><span class="bottom-nav-icon">📊</span></a>
+  </nav>
+</div>
+
+<!-- Templates -->
+<template id="tpl-index">
+  <form class="filters" id="filter-form">
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input type="text" name="q" id="q-input" placeholder="Suche: Name, Duft, Farbe…">
+    </div>
+    <select name="sort">
+      <option value="name_asc">Name A–Z</option>
+      <option value="name_desc">Name Z–A</option>
+      <option value="bestand_asc">Bestand aufsteigend</option>
+      <option value="bestand_desc">Bestand absteigend</option>
+      <option value="verkauft_desc">Meistverkauft zuerst</option>
+    </select>
+  </form>
+  <div class="list-toolbar">
+    <div class="item-count" id="item-count"></div>
+  </div>
+  <div id="grid" class="grid"></div>
+  <div id="empty-state" class="empty-state hidden"></div>
+</template>
+
+<template id="tpl-add">
+  <a class="back-link" href="#/">← Zur Übersicht</a>
+  <h1>Neues Produkt anlegen</h1>
+  <form class="item-form" id="add-form">
+    <div class="field-grid">
+      <label>Name<input type="text" name="name" id="f-name" required placeholder="z. B. Kerze 1"></label>
+      <label>Größe<input type="text" name="variante_groesse" id="f-groesse" placeholder="z. B. groß / 200g"></label>
+      <label>Duft<input type="text" name="variante_duft" id="f-duft" placeholder="z. B. Vanille"></label>
+      <label>Farbe<input type="text" name="variante_farbe" id="f-farbe" placeholder="z. B. Weiß"></label>
+      <label>Kosten pro Stück (€)<input type="number" step="0.01" min="0" name="kosten_pro_stueck" id="f-kosten" placeholder="Produktions-/Einkaufskosten"></label>
+      <label>Verkaufspreis (€)<input type="number" step="0.01" min="0" name="verkaufspreis" id="f-preis"></label>
+      <label>Lagerort
+        <select name="lagerort_bereich" id="f-lagerort-bereich">
+          <option value="">– bitte wählen –</option>
+          <option value="Garage">Garage</option>
+          <option value="Keller">Keller</option>
+          <option value="Haus">Haus</option>
+        </select>
+      </label>
+      <label>Box / Regal<input type="text" name="lagerort_detail" id="f-lagerort-detail" placeholder="z. B. Box 3, Regal oben"></label>
+      <label class="full">Foto<input type="file" name="foto" id="f-foto" accept="image/*"></label>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">Speichern</button>
+      <a href="#/" class="btn-secondary">Abbrechen</a>
+    </div>
+    <div id="save-status" class="status-text"></div>
+  </form>
+</template>
+
+<template id="tpl-produkt">
+  <a class="back-link" href="#/">← Zur Übersicht</a>
+  <div class="item-detail">
+    <div class="item-photos" id="item-photos"></div>
+    <label class="btn-secondary small add-photo-label">
+      Foto ändern
+      <input type="file" id="change-photo-input" accept="image/*" style="display:none">
+    </label>
+
+    <div class="calc-box" id="bestand-box">
+      <h3>📦 Bestand: <span id="bestand-wert">–</span> Stück</h3>
+      <div class="calc-grid">
+        <label>Produktion zubuchen (Stück)<input type="number" min="1" step="1" id="buchen-menge"></label>
+        <button type="button" id="buchen-btn" class="btn-secondary small">Buchen</button>
+      </div>
+      <div id="buchen-status" class="status-text"></div>
+    </div>
+
+    <div class="calc-box" id="verkauf-box">
+      <h3>🏷️ Verkauf eintragen</h3>
+      <div class="calc-grid">
+        <label>Datum<input type="date" id="verkauf-datum"></label>
+        <label>Verkaufte Menge (Stück)<input type="number" min="1" step="1" id="verkauf-menge"></label>
+      </div>
+      <button type="button" id="verkauf-btn" class="btn-secondary small">Eintragen</button>
+      <div id="verkauf-status" class="status-text"></div>
+    </div>
+
+    <form class="item-form" id="edit-form">
+      <div class="field-grid">
+        <label>Name<input type="text" name="name" id="e-name" required></label>
+        <label>Größe<input type="text" name="variante_groesse" id="e-groesse"></label>
+        <label>Duft<input type="text" name="variante_duft" id="e-duft"></label>
+        <label>Farbe<input type="text" name="variante_farbe" id="e-farbe"></label>
+        <label>Kosten pro Stück (€)<input type="number" step="0.01" min="0" name="kosten_pro_stueck" id="e-kosten"></label>
+        <label>Verkaufspreis (€)<input type="number" step="0.01" min="0" name="verkaufspreis" id="e-preis"></label>
+        <label>Lagerort
+          <select name="lagerort_bereich" id="e-lagerort-bereich">
+            <option value="">– bitte wählen –</option>
+            <option value="Garage">Garage</option>
+            <option value="Keller">Keller</option>
+            <option value="Haus">Haus</option>
+          </select>
+        </label>
+        <label>Box / Regal<input type="text" name="lagerort_detail" id="e-lagerort-detail"></label>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Änderungen speichern</button>
+      </div>
+      <div id="save-status" class="status-text"></div>
+    </form>
+
+    <details class="console-breakdown" id="verlauf-details" open>
+      <summary>📜 Verlauf</summary>
+      <div id="verlauf-body"></div>
+    </details>
+
+    <form id="delete-form">
+      <button type="submit" class="btn-danger">Produkt löschen</button>
+    </form>
+  </div>
+</template>
+
+<template id="tpl-lager">
+  <h1>🗄️ Lageransicht</h1>
+  <div id="storage-view" class="storage-view"></div>
+</template>
+
+<template id="tpl-preise">
+  <h1>🏷️ Preisliste</h1>
+  <div class="table-scroll">
+    <table class="import-table" id="preise-table">
+      <thead>
+        <tr><th>Name</th><th>Variante</th><th>Kosten/Stück</th><th>Verkaufspreis</th><th>Marge</th></tr>
+      </thead>
+      <tbody id="preise-tbody"></tbody>
+    </table>
+  </div>
+</template>
+
+<template id="tpl-dashboard">
+  <h1>📊 Dashboard</h1>
+  <section class="stats" id="stats"></section>
+
+  <div class="stat-section">
+    <h2>🏆 Bestseller</h2>
+    <div id="bestseller-list"></div>
+  </div>
+
+  <div class="stat-section">
+    <h2>📅 Jahresbilanz</h2>
+    <div class="calc-grid">
+      <label>Jahr
+        <select id="bilanz-jahr"></select>
+      </label>
+    </div>
+    <div id="bilanz-result"></div>
+  </div>
+
+  <div class="stat-section">
+    <h2>🔗 Organisatorisches</h2>
+    <div class="dashboard-links">
+      <button type="button" id="dash-export-btn" class="dashboard-link">📤 Export (CSV)</button>
+      <button type="button" id="logout-btn" class="dashboard-link">🚪 Abmelden</button>
+    </div>
+  </div>
+</template>
+
+<script src="config.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

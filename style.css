@@ -1,0 +1,1042 @@
+:root {
+  --bg: #f6f5f2;
+  --card: #ffffff;
+  --border: #e4e1da;
+  --text: #262420;
+  --text-muted: #78736a;
+  --accent: #b5652c;
+  --accent-dark: #8f4f21;
+  --pos: #2f7d4f;
+  --neg: #b23a3a;
+  --radius: 10px;
+  --surface-2: #f1efe9;
+  --photo-bg: #eee;
+  --flash-bg: #eaf3ec;
+  --flash-border: #bfdcc6;
+  --flash-text: #2f6b45;
+  --notice-bg: #fbf1e2;
+  --notice-border: #ecd7ae;
+  --font-display: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --shadow-sm: 0 1px 3px rgba(38,36,32,0.06), 0 1px 2px rgba(38,36,32,0.04);
+  --shadow-md: 0 6px 20px rgba(38,36,32,0.10);
+  color-scheme: light;
+}
+
+/* Dunkles Farbschema: folgt der Systemeinstellung, sofern nicht ueber den
+   Umschalter im Kopfbereich (data-theme) explizit uebersteuert. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171613;
+    --card: #221f1b;
+    --border: #3a362e;
+    --text: #ece7dd;
+    --text-muted: #a29b8c;
+    --accent: #d98a4f;
+    --accent-dark: #f0a868;
+    --pos: #4fbb80;
+    --neg: #e2716f;
+    --surface-2: #2c2822;
+    --photo-bg: #2c2822;
+    --flash-bg: #1e3327;
+    --flash-border: #2f5138;
+    --flash-text: #8fd8a8;
+    --notice-bg: #3a2f1c;
+    --notice-border: #5c4a2a;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.24);
+    --shadow-md: 0 6px 20px rgba(0,0,0,0.38);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171613;
+  --card: #221f1b;
+  --border: #3a362e;
+  --text: #ece7dd;
+  --text-muted: #a29b8c;
+  --accent: #d98a4f;
+  --accent-dark: #f0a868;
+  --pos: #4fbb80;
+  --neg: #e2716f;
+  --surface-2: #2c2822;
+  --photo-bg: #2c2822;
+  --flash-bg: #1e3327;
+  --flash-border: #2f5138;
+  --flash-text: #8fd8a8;
+  --notice-bg: #3a2f1c;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.24);
+  --shadow-md: 0 6px 20px rgba(0,0,0,0.38);
+  --notice-border: #5c4a2a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.hidden { display: none !important; }
+
+a { color: var(--accent-dark); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Login */
+#view-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.login-box {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 32px 28px; max-width: 340px; width: 100%;
+}
+.login-box h1 { margin: 0 0 4px; font-size: 1.3rem; font-family: var(--font-display); }
+.muted { color: var(--text-muted); font-size: 0.88rem; }
+.login-box .muted { margin-bottom: 18px; font-size: 0.9rem; }
+.login-box form { display: flex; flex-direction: column; gap: 12px; }
+.login-box label { display: flex; flex-direction: column; gap: 5px; font-size: 0.85rem; color: var(--text-muted); }
+.login-box input { padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: var(--card); color: var(--text); }
+.status-text.error { color: var(--neg); }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+.brand { font-weight: 700; font-size: 1.15rem; color: var(--text); font-family: var(--font-display); letter-spacing: 0.2px; }
+.brand:hover { text-decoration: none; }
+.topbar nav { display: flex; gap: 18px; align-items: center; }
+.topbar nav a.nav-active:not(.btn-primary-nav) { color: var(--accent-dark); font-weight: 600; }
+.btn-primary-nav {
+  background: var(--accent);
+  color: #fff !important;
+  padding: 6px 14px;
+  border-radius: 8px;
+}
+
+/* Untere App-Navigation (die Seite wird fast ausschließlich mobil genutzt,
+   daher liegt die Hauptnavigation - wie bei einer Handy-App - unten statt in
+   der Kopfzeile): Übersicht, Favoriten- und Coop-Kurzfilter, das
+   hervorgehobene "+" zum Hinzufügen, und das Dashboard. */
+.bottom-nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 200;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+}
+.bottom-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: 1.3rem;
+  text-decoration: none;
+  transition: color .15s ease, background .15s ease;
+}
+.bottom-nav-item:hover { text-decoration: none; color: var(--text); }
+.bottom-nav-item.nav-active { color: var(--accent-dark); background: var(--surface-2); }
+.bottom-nav-add {
+  width: 54px; height: 54px;
+  margin-top: -24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.5rem;
+  box-shadow: var(--shadow-md);
+}
+.bottom-nav-add:hover { background: var(--accent-dark); color: #fff; }
+.bottom-nav-add.nav-active { background: var(--accent); color: #fff; }
+.btn-primary-nav:hover { background: var(--accent-dark); text-decoration: none; }
+.link-btn {
+  background: none; border: none; color: var(--accent-dark); cursor: pointer;
+  font-size: 1rem; padding: 0; font-family: inherit;
+}
+.link-btn:hover { text-decoration: underline; }
+
+/* Unten genug Platz lassen, damit Inhalte nicht hinter der fixen
+   Bottom-Navigation verschwinden (siehe .bottom-nav). */
+main { max-width: 1100px; margin: 0 auto; padding: 24px 20px calc(84px + env(safe-area-inset-bottom)); }
+
+/* Schwebender Toast statt fixer Leiste: erscheint unten mittig, blendet sanft
+   ein/aus und verschiebt dabei nie den restlichen Seiteninhalt. */
+.flash {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 500;
+  max-width: min(420px, calc(100vw - 32px));
+  background: var(--flash-bg);
+  border: 1px solid var(--flash-border);
+  color: var(--flash-text);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+.flash.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+
+.notice {
+  background: var(--notice-bg);
+  border: 1px solid var(--notice-border);
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+/* Kleine, dezente Artikelzahl über den Filtern auf der Übersicht (ersetzt die
+   frueher dort eingebetteten Kennzahlen-Kacheln, die jetzt auf der eigenen
+   Dashboard-Seite stehen) - steht in einer Zeile mit dem Ansichts-Umschalter,
+   um auf kleinen Bildschirmen Platz zu sparen. */
+.list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.item-count { font-size: 0.85rem; color: var(--text-muted); }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.stat-icon {
+  font-size: 1.1rem; line-height: 1; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2);
+}
+.stat-body { min-width: 0; }
+.stat-label { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 1px; white-space: nowrap; }
+.stat-value {
+  font-size: 1.08rem; font-weight: 700; font-family: var(--font-display);
+  overflow-wrap: anywhere; word-break: break-word;
+}
+.stat-card.pos { border-left-color: var(--pos); }
+.stat-card.pos .stat-value { color: var(--pos); }
+.stat-card.neg { border-left-color: var(--neg); }
+.stat-card.neg .stat-value { color: var(--neg); }
+
+/* Die zwei wichtigsten Kennzahlen (Gesamtwert, potentieller Gewinn) etwas
+   groesser und mit leicht getöntem Hintergrund absetzen. */
+.stat-card.highlight {
+  padding: 13px 16px;
+  background: linear-gradient(180deg, var(--surface-2), var(--card));
+}
+.stat-card.highlight .stat-icon { width: 40px; height: 40px; font-size: 1.35rem; border-radius: 11px; }
+.stat-card.highlight .stat-label { font-size: 0.78rem; }
+.stat-card.highlight .stat-value { font-size: 1.2rem; }
+
+.console-breakdown {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 6px 16px; margin-bottom: 20px;
+}
+.console-breakdown summary {
+  cursor: pointer; padding: 8px 0; font-size: 0.9rem; color: var(--text-muted); user-select: none;
+}
+.console-breakdown-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-bottom: 10px; }
+.console-breakdown-table th, .console-breakdown-table td {
+  text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border);
+}
+.console-breakdown-table th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; }
+.console-breakdown-table td.num, .console-breakdown-table th.num { text-align: right; }
+
+/* Statistik-Seite: Abschnitte mit Aufteilungs-Tabellen (inkl. kleinem Balken
+   je Zeile) und Top-5-Listen für wertvollste Artikel/Gewinne/Renditen. */
+.stat-section { margin-top: 24px; }
+.stat-section h2 { font-size: 1rem; font-family: var(--font-display); margin: 0 0 10px; color: var(--text); }
+.stat-section .console-breakdown-table { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 16px; }
+.breakdown-bar { background: var(--surface-2); border-radius: 6px; height: 8px; min-width: 60px; overflow: hidden; }
+.breakdown-bar-fill { background: var(--accent); height: 100%; border-radius: 6px; }
+
+.stat-toplists { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.stat-list { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.stat-list-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-bottom: 1px solid var(--border); color: inherit; text-decoration: none; font-size: 0.88rem;
+}
+.stat-list-row:last-child { border-bottom: none; }
+.stat-list-row:hover { background: var(--surface-2); }
+.stat-list-rank { flex: 0 0 20px; color: var(--text-muted); font-weight: 600; font-size: 0.8rem; }
+.stat-list-title { flex: 1 1 auto; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-list-console { flex: 0 0 auto; color: var(--text-muted); font-size: 0.78rem; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-list-value { flex: 0 0 auto; font-weight: 600; white-space: nowrap; }
+.stat-list-value.pos { color: var(--pos); }
+.stat-list-value.neg { color: var(--neg); }
+
+/* Dashboard-Hub: Verkaufen/Statistiken/Import/Export/PDF/Abmelden sind von
+   der Kopfzeile hierher gewandert, damit die Kopfzeile schlank bleibt. */
+.dashboard-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+.dashboard-link {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 12px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text); text-decoration: none; font-weight: 600; font-size: 0.9rem; cursor: pointer;
+  font-family: inherit; box-shadow: var(--shadow-sm); transition: box-shadow .15s ease, transform .15s ease;
+}
+.dashboard-link:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); text-decoration: none; }
+.dashboard-link-danger { color: var(--neg); }
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.filters input, .filters select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+/* Suchleiste: eigene, prominente Zeile ganz oben im Filter-Formular (bleibt
+   technisch Teil von #filter-form, damit die bestehende FormData-basierte
+   Filterlogik unveraendert funktioniert - nur optisch aus der Zeile der
+   restlichen Filter herausgezogen). */
+.filters .search-bar {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.filters .search-bar .search-icon { font-size: 1rem; opacity: 0.55; flex-shrink: 0; }
+.filters .search-bar input[name="q"] {
+  flex: 1; min-width: 0; border: none; background: none; outline: none; padding: 0;
+  font-size: 0.95rem; color: var(--text);
+}
+
+/* Mehrfachauswahl-Filter (z.B. Verkaufsstatus): <details>/<summary> statt <select>,
+   damit man mehrere Haken gleichzeitig setzen kann (z.B. "Verkauft" ausblenden,
+   Rest anzeigen), ohne extra Bibliothek. */
+.ms-filter { position: relative; }
+.ms-filter > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card); color: var(--text); font-size: 0.9rem;
+  display: flex; align-items: center; gap: 6px;
+}
+.ms-filter > summary::-webkit-details-marker { display: none; }
+.ms-filter > summary::after { content: "▾"; color: var(--text-muted); font-size: 0.75rem; }
+.ms-filter .ms-count { color: var(--text-muted); font-size: 0.8rem; }
+.ms-filter .ms-options {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 20;
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px; display: flex; flex-direction: column; gap: 4px;
+  min-width: 220px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.ms-filter .ms-options label {
+  display: flex; align-items: center; gap: 8px; font-size: 0.88rem;
+  padding: 4px 6px; border-radius: 6px; cursor: pointer;
+}
+.ms-filter .ms-options label:hover { background: var(--photo-bg); }
+.ms-filter .ms-actions { display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid var(--border); padding-top: 6px; }
+.ms-filter .ms-actions button {
+  flex: 1; font-size: 0.78rem; padding: 4px 8px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--photo-bg); color: var(--text); cursor: pointer;
+}
+
+.coop-filter-toggle {
+  display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: var(--text);
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card);
+  cursor: pointer; user-select: none;
+}
+.checkbox-inline { flex-direction: row !important; align-items: center; gap: 8px !important; }
+.checkbox-inline input { width: auto !important; }
+
+.coop-badge {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem;
+  background: var(--surface-2); color: var(--text-muted); border-radius: 6px; padding: 2px 6px;
+}
+
+.view-toggle {
+  position: relative;
+  display: flex; gap: 0; margin-left: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+}
+.view-toggle-indicator {
+  position: absolute;
+  top: 3px; bottom: 3px; left: 3px;
+  width: calc((100% - 6px) / 4);
+  background: var(--accent);
+  border-radius: 7px;
+  box-shadow: var(--shadow-sm);
+  transition: transform .2s ease;
+  z-index: 0;
+}
+/* Nur noch Icons statt Icon+Text - kompakter, passt auch mit vier Ansichten
+   problemlos auf schmale Handybildschirme (Beschriftung steht als Tooltip
+   im title-Attribut weiterhin zur Verfügung). */
+.view-btn {
+  position: relative; z-index: 1; flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; color: var(--text-muted);
+  padding: 8px 6px; font-size: 1.15rem; line-height: 1; cursor: pointer; font-family: inherit;
+  border-radius: 7px;
+  transition: color .2s ease;
+}
+.view-btn.active { color: #fff; }
+
+/* Bulk-Bearbeitung: Symbolleiste, die auftaucht, sobald in der Listenansicht
+   mindestens ein Artikel ausgewaehlt ist. */
+.bulk-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 14px; margin-bottom: 14px; font-size: 0.85rem;
+}
+.bulk-toolbar select, .bulk-toolbar input[type="text"] {
+  padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--card); color: var(--text); font-size: 0.85rem;
+}
+.bulk-toolbar #bulk-count { font-weight: 600; color: var(--text); }
+
+/* Lagerort-Ansicht: gruppierte Liste statt Karten/Tabelle */
+.storage-group {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 14px; overflow: hidden;
+}
+.storage-group-header {
+  padding: 10px 14px; font-weight: 600; background: var(--surface-2); color: var(--text);
+  display: flex; justify-content: space-between; gap: 10px; font-size: 0.9rem;
+  font-family: var(--font-display);
+}
+.storage-group-count { color: var(--text-muted); font-weight: 400; font-size: 0.8rem; }
+.storage-group-items .list-row { border-radius: 0; border: none; border-top: 1px solid var(--border); }
+.storage-group-items .list-row:first-child { border-top: none; }
+
+/* Gewinnrechner auf der Artikel-Detailseite: eigenstaendiges Rechen-Tool,
+   unabhaengig vom Formular - Aenderungen hier werden nicht gespeichert. */
+.calc-box {
+  margin-top: 16px; padding: 14px 16px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.calc-box h3 { margin: 0 0 10px; font-size: 1rem; font-family: var(--font-display); }
+.calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.calc-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-muted); }
+.calc-grid input {
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-2); color: var(--text); font-family: inherit; font-size: 0.95rem;
+}
+.calc-result {
+  display: flex; gap: 24px; margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--border); font-size: 0.95rem;
+}
+.calc-result strong { font-family: var(--font-display); }
+.calc-result .pos { color: var(--pos); }
+.calc-result .neg { color: var(--neg); }
+
+/* Angebotstext-Generator auf der Artikel-Detailseite */
+.listing-box { margin-top: 16px; }
+.listing-output { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.listing-output textarea {
+  width: 100%; font-family: inherit; font-size: 0.9rem; padding: 10px;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); resize: vertical;
+}
+.listing-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.listing-actions a.btn-secondary { display: inline-flex; align-items: center; }
+.listing-hint { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+
+.grid, .storage-view { transition: opacity .18s ease; }
+/* Standardansicht "Karten": schlanke Zeilen-Karten untereinander statt
+   grosser Foto-Kacheln (siehe .card-row weiter unten). */
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.grid.list { gap: 0; }
+/* Würfelansicht: immer drei kompakte Kacheln nebeneinander, auch auf dem
+   Handy - angelehnt an Produktraster wie z.B. bei Zalando. */
+.grid.cube { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cube-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.cube-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.cube-card-link { display: contents; color: inherit; text-decoration: none; cursor: pointer; }
+.cube-card-photo { position: relative; aspect-ratio: 1/1; background: var(--photo-bg); }
+.cube-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cube-card-photo .no-photo { font-size: 1.3rem; }
+.cube-card-body { padding: 6px 7px 8px; }
+.cube-card-title {
+  font-weight: 600; font-size: 0.74rem; font-family: var(--font-display);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 1px;
+}
+.cube-card-console { font-size: 0.64rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cube-card-price { font-size: 0.76rem; font-weight: 700; font-family: var(--font-display); margin-top: 3px; }
+.cube-card .fav-btn {
+  position: absolute; top: 6px; right: 6px; z-index: 2;
+  background: rgba(0,0,0,0.55); border-radius: 50%;
+  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem;
+}
+.cube-card .fav-btn:not(.is-fav) { color: #fff; }
+
+/* Standardansicht "Karten": schlanke Zeilen-Karte statt grosser Foto-Kachel -
+   kleines Foto links, Titel/Konsole/Preis in der Mitte, Status-Pill rechts,
+   Favoriten-Stern oben rechts. Status-Select und Stern liegen bewusst als
+   echte Geschwister außerhalb der <a>-Verlinkung (".card-row-link" ist
+   "display:contents" und daher fuer das Grid unsichtbar), damit ein Tipp
+   darauf auf dem Handy/als installierte App nicht gleichzeitig zum Artikel
+   navigiert (siehe ausfuehrlicher Kommentar bei .list-row). */
+.card-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  /* Titel bekommt eine eigene, volle Zeile (Titel- + Status-Spalte
+     zusammen) bis kurz vor den Stern, da die vollstaendige Bezeichnung oft
+     erst eindeutig macht, um welchen Artikel es sich handelt. Status-Pill
+     ruckt dafuer in die Konsole/Preis-Zeilen (rechts daneben). */
+  grid-template-areas: "photo title title" "photo console status" "photo price status";
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: center;
+  padding: 10px 40px 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.card-row:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.card-row-link { display: contents; color: inherit; text-decoration: none; cursor: pointer; }
+.card-row-photo { grid-area: photo; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; background: var(--photo-bg); }
+.card-row-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-row-photo .no-photo { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 1.5rem; color: var(--text-muted); }
+.card-row-title {
+  grid-area: title;
+  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+  margin-bottom: 2px;
+}
+.card-row-console { grid-area: console; font-size: 0.78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-row-price { grid-area: price; font-weight: 700; font-family: var(--font-display); font-size: 0.92rem; margin-top: 2px; }
+.card-row-status { grid-area: status; justify-self: end; align-self: center; max-width: 120px; }
+.card-row .fav-btn { position: absolute; top: 8px; right: 8px; z-index: 2; }
+
+.card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  color: var(--text);
+  display: block;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.card:hover { box-shadow: var(--shadow-md); text-decoration: none; transform: translateY(-3px); }
+/* .card-link ist der eigentliche Link zum Artikel; "display:contents" macht ihn
+   im Grid/Layout unsichtbar, sodass card-photo/card-body-top optisch direkt in
+   .card sitzen. Der Status-Select in .card-sale liegt als echtes Geschwister
+   dazwischen, also NIE innerhalb eines <a> - das verhindert das Navigations-
+   Problem beim Antippen auf dem Handy/in der installierten App zuverlässig. */
+.card-link { display: contents; color: inherit; text-decoration: none; cursor: pointer; }
+.card-photo { position: relative; aspect-ratio: 4/3; background: var(--photo-bg); }
+.card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.no-photo { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 2.2rem; color: var(--text-muted); }
+.no-photo.big { font-size: 4rem; aspect-ratio: 4/3; background: var(--photo-bg); border-radius: var(--radius); }
+.badge {
+  position: absolute; top: 8px; left: 8px;
+  background: rgba(0,0,0,0.65); color: #fff;
+  font-size: 0.7rem; padding: 3px 8px; border-radius: 20px;
+}
+.card-body-top { padding: 12px 14px 0; }
+.card-body-bottom { padding: 0 14px 12px; }
+.card-title { font-weight: 600; margin-bottom: 2px; font-family: var(--font-display); }
+.card-console { font-size: 0.85rem; color: var(--text-muted); }
+.card-category { font-size: 0.8rem; color: var(--accent-dark); margin-top: 2px; }
+.card-sale { margin-top: 6px; padding: 0 14px; }
+
+/* Verkaufsstatus-Vermerk (Badge auf Karte/Liste sowie im Formular) */
+.sale-badge {
+  display: inline-block; font-size: 0.72rem; padding: 2px 8px; border-radius: 20px;
+  font-weight: 600; white-space: nowrap;
+}
+.sale-for-sale { background: rgba(47,125,79,0.15); color: var(--pos); }
+.sale-reserved { background: rgba(217,138,79,0.18); color: var(--accent-dark); }
+.sale-sold { background: rgba(120,115,106,0.2); color: var(--text-muted); }
+.sale-not-for-sale { background: rgba(178,58,58,0.15); color: var(--neg); }
+
+/* Verkaufsstatus direkt in Karten-/Listenansicht aenderbar: ein <select>,
+   das wie ein Badge aussieht, statt reinem Text - antippen genuegt, ohne
+   den Artikel oeffnen zu muessen. Ohne Vermerk: schlichtes helles Feld. */
+.sale-status-inline {
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  border: none; border-radius: 20px; padding: 3px 22px 3px 10px;
+  font-size: 0.72rem; font-weight: 600; font-family: inherit;
+  cursor: pointer; color: var(--text-muted); background-color: var(--surface-2);
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='%2378736a' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 7px center; background-size: 9px;
+  max-width: 100%;
+}
+.sale-status-inline:hover { filter: brightness(0.97); }
+.sale-status-inline:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sale-status-inline:disabled { opacity: 0.6; cursor: wait; }
+.sale-status-inline.sale-for-sale { background-color: rgba(47,125,79,0.15); color: var(--pos); }
+.sale-status-inline.sale-reserved { background-color: rgba(217,138,79,0.18); color: var(--accent-dark); }
+.sale-status-inline.sale-sold { background-color: rgba(120,115,106,0.2); color: var(--text-muted); }
+.sale-status-inline.sale-not-for-sale { background-color: rgba(178,58,58,0.15); color: var(--neg); }
+
+/* Listenansicht: kompakte Zeilen ohne Fotos, fuer einen schnellen Überblick */
+.list-header {
+  display: grid;
+  grid-template-columns: 28px 28px 110px 2fr 1.3fr 1.4fr 90px 90px;
+  gap: 10px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.list-row {
+  display: grid;
+  grid-template-columns: 28px 28px 110px 2fr 1.3fr 1.4fr 90px 90px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: none;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.list-check { display: flex; align-items: center; }
+.list-check input, .list-row-check { width: 16px; height: 16px; cursor: pointer; }
+.list-fav { display: flex; align-items: center; }
+.list-row-link { display: contents; color: inherit; text-decoration: none; cursor: pointer; }
+.list-row:first-child { border-top: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; }
+.list-row:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+.list-row:hover { background: var(--surface-2); text-decoration: none; }
+.list-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-console, .list-price { color: var(--text-muted); font-size: 0.85rem; }
+.list-status { min-width: 0; overflow: hidden; }
+.badge-inline {
+  display: inline-block; font-size: 0.7rem; padding: 3px 8px; border-radius: 20px;
+  background: var(--surface-2); color: var(--text-muted); text-align: center; white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .list-header { display: none; }
+  /* Mobil: Typ-Badge (Spiel/Zubehoer/...) faellt weg - bei den meisten
+     Sammlungen ohnehin fast immer "Spiel" und daher keine zusaetzliche
+     Information wert. Stattdessen bekommt der Titel die volle Zeilenbreite
+     und wird nicht mehr abgeschnitten, da die vollstaendige Bezeichnung oft
+     erst eindeutig macht, um welchen Artikel es sich handelt (z.B. welche
+     Edition/welcher Teil). Eigene grid-template-areas statt impliziter
+     Auto-Platzierung, analog zum .sell-row-Fix weiter unten. */
+  .list-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "title title" "console status" "price1 price2";
+    row-gap: 6px;
+    position: relative;
+  }
+  .list-check { display: none; }
+  .list-row .badge-inline { display: none; }
+  .list-row .list-title {
+    grid-area: title;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    padding-right: 30px;
+  }
+  .list-row .list-console { grid-area: console; align-self: center; }
+  .list-row .list-status { grid-area: status; justify-self: end; }
+  /* Die beiden Preis-Spans liegen als Geschwister im selben, per
+     "display:contents" transparenten <a>-Link - dieser wird hier gezielt
+     wieder auf "flex" zurueckgesetzt, damit seine Kinder (Kauf/Wert) sich
+     gemeinsam die volle Zeilenbreite teilen statt der generischen
+     2-Spalten-Aufteilung zu folgen. */
+  .list-row a.list-row-link:nth-of-type(2) {
+    grid-row: 3;
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+  }
+  /* Der Stern wird aus dem Mobil-Grid herausgenommen (sonst verschiebt er
+     alle anderen Zellen) und stattdessen oben rechts in die Zeile gesetzt. */
+  .list-fav { position: absolute; top: 8px; right: 10px; }
+}
+
+/* Verkaufen-Bereich: eigene Zeilen-Variante mit Kauf/Wunsch/Gewinn-Spalten
+   statt der Standard-Listenspalten. */
+.sell-list { border-radius: var(--radius); overflow: hidden; }
+.sell-row {
+  display: grid;
+  grid-template-columns: 28px 28px 2fr 1fr 1.2fr 90px 90px 90px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: none;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.sell-row:first-child { border-top: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; }
+.sell-row:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+.sell-row:hover { background: var(--surface-2); }
+.sell-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sell-console { color: var(--text-muted); font-size: 0.85rem; }
+/* Mobil: eigenes, sauber aufgeteiltes Layout statt des generischen
+   2-Spalten-Rasters (das wegen der Reihenfolge im Stylesheet vorher nie
+   griff und stattdessen 8 viel zu schmale Desktop-Spalten quetschte).
+   Titel oben (mit Respektabstand zum Stern), darunter Konsole + Status,
+   darunter Kauf/Wert/Gewinn ueber die volle Zeilenbreite verteilt. */
+@media (max-width: 720px) {
+  .sell-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "title title" "console status" "prices prices";
+    row-gap: 6px;
+    position: relative;
+  }
+  .sell-row .sell-title { grid-area: title; padding-right: 30px; }
+  .sell-row .sell-console { grid-area: console; align-self: center; }
+  .sell-row .list-status { grid-area: status; justify-self: end; }
+  .sell-row a.list-row-link:nth-of-type(2) {
+    grid-area: prices;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+}
+
+/* Verkaufen-Bereich: Toolbar mit "Alle auswählen" oberhalb der Liste. */
+.sell-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+  padding: 8px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.select-all-label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text); font-weight: 600; }
+.select-all-label input { width: 16px; height: 16px; cursor: pointer; }
+
+/* Paket-Rechner: Chips der ausgewählten Artikel + Ergebnis-Kacheln, wiederverwendet
+   die bestehenden .calc-box/.calc-grid Grundformen. */
+.package-items { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.package-item {
+  display: inline-block;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.package-result {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.package-result > div { display: flex; flex-direction: column; gap: 2px; }
+.package-result .label { font-size: 0.7rem; color: var(--text-muted); }
+.package-result strong { font-family: var(--font-display); font-size: 1.05rem; }
+.package-result strong.pos { color: var(--pos); }
+.package-result strong.neg { color: var(--neg); }
+
+/* Verkaufshistorie: Zusammenfassung + Liste der bereits verkauften Artikel. */
+.sold-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.sold-summary strong { font-family: var(--font-display); color: var(--text); font-size: 1rem; }
+.sold-summary .pos strong, .sold-summary strong.pos { color: var(--pos); }
+.sold-summary .neg strong, .sold-summary strong.neg { color: var(--neg); }
+.sold-list { border-radius: var(--radius); overflow: hidden; }
+.sold-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 90px 90px 90px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: none;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.sold-row:first-child { border-top: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; }
+.sold-row:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+.sold-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sold-console { color: var(--text-muted); font-size: 0.85rem; }
+@media (max-width: 720px) {
+  .sold-row { grid-template-columns: 1fr 1fr; grid-auto-rows: auto; row-gap: 4px; }
+}
+/* Wertblock am Kartenfuss: Marktwert gross/fett als wichtigste Information,
+   Kaufpreis und potentieller Gewinn kompakt darunter. */
+.card-value-block { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+.card-value-main { font-size: 0.95rem; font-weight: 600; font-family: var(--font-display); line-height: 1.1; }
+.card-value-label { font-size: 0.68rem; color: var(--text-muted); margin-bottom: 3px; }
+.card-value-sub { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); }
+.card-value-sub .pos { color: var(--pos); font-weight: 600; }
+.card-value-sub .neg { color: var(--neg); font-weight: 600; }
+
+/* Favoriten-Stern: eigenstaendiger Button, kein Link (siehe Kommentar in app.js) */
+.fav-btn {
+  border: none; background: none; cursor: pointer; padding: 2px;
+  font-size: 1.1rem; line-height: 1; color: var(--text-muted);
+  filter: grayscale(1); opacity: 0.6;
+  transition: transform .1s ease, opacity .15s ease, filter .15s ease;
+}
+.fav-btn:hover { transform: scale(1.15); opacity: 1; }
+.fav-btn.is-fav { filter: none; opacity: 1; }
+.card .fav-btn {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  background: rgba(0,0,0,0.55); border-radius: 50%;
+  width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+}
+.card .fav-btn:not(.is-fav) { color: #fff; }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.empty-state-icon { font-size: 3rem; margin-bottom: 10px; opacity: 0.7; }
+.empty-state p { margin: 0 0 4px; font-size: 1.05rem; color: var(--text); }
+.empty-state p.empty-sub { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px; }
+.empty-state .btn-secondary { margin-top: 4px; }
+
+/* Aktive Filter als entfernbare Chips über der Liste. */
+.filter-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font-size: 0.8rem;
+  padding: 5px 8px 5px 12px; border-radius: 20px;
+}
+.filter-chip button {
+  border: none; background: none; cursor: pointer; color: var(--text-muted);
+  font-size: 0.9rem; line-height: 1; padding: 2px; border-radius: 50%;
+}
+.filter-chip button:hover { background: var(--border); color: var(--text); }
+
+/* Skeleton-Platzhalter, solange die Artikel geladen werden. */
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.skeleton-photo, .skeleton-line {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 37%, var(--surface-2) 63%);
+  background-size: 300% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+.skeleton-photo { aspect-ratio: 4/3; }
+.skeleton-line { height: 12px; border-radius: 4px; margin: 12px 14px; }
+.skeleton-line.short { width: 55%; }
+.btn-primary {
+  display: inline-block;
+  background: var(--accent); color: #fff;
+  padding: 10px 18px; border: none; border-radius: 8px;
+  cursor: pointer; font-size: 0.95rem; margin-top: 10px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .15s ease, transform .15s ease, background .15s ease;
+}
+.btn-primary:hover { background: var(--accent-dark); text-decoration: none; color: #fff; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+.btn-secondary {
+  display: inline-block;
+  background: var(--card); color: var(--text);
+  border: 1px solid var(--border); padding: 10px 18px; border-radius: 8px;
+  cursor: pointer; font-size: 0.95rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .15s ease, transform .15s ease, background .15s ease;
+}
+.btn-secondary:hover { background: var(--surface-2); text-decoration: none; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.btn-secondary:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+.btn-secondary.small { padding: 6px 12px; font-size: 0.85rem; }
+.btn-danger {
+  background: var(--card); color: var(--neg); border: 1px solid var(--neg);
+  padding: 8px 16px; border-radius: 8px; cursor: pointer;
+  transition: background .15s ease;
+}
+.btn-danger:hover { background: rgba(178,58,58,0.1); }
+
+h1 { font-size: 1.4rem; margin-bottom: 16px; font-family: var(--font-display); font-weight: 700; }
+
+.item-form { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+  margin-bottom: 16px;
+}
+.field-grid label { display: flex; flex-direction: column; font-size: 0.85rem; color: var(--text-muted); gap: 5px; }
+.field-grid label.full { grid-column: 1 / -1; }
+.field-grid input, .field-grid select, .field-grid textarea {
+  padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 0.95rem; color: var(--text); font-family: inherit; background: var(--card);
+}
+.form-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.photo-section { margin-bottom: 20px; }
+.photo-drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 24px; cursor: pointer; background: var(--card); margin-bottom: 10px;
+  text-align: center;
+}
+.photo-drop input { display: none; }
+.photo-previews { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.photo-previews img { width: 90px; height: 90px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+.status-text { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; }
+
+.back-link { display: inline-block; margin-bottom: 14px; }
+.item-detail { display: flex; flex-direction: column; gap: 20px; }
+.item-photos { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.add-photo-label { align-self: flex-start; margin-top: -10px; }
+.photo-wrap { position: relative; }
+.photo-wrap img { width: 160px; height: 160px; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border); }
+.photo-delete {
+  position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: #fff;
+  border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.75rem;
+}
+.ai-note { background: var(--surface-2); color: var(--text); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; margin-bottom: 14px; }
+
+/* Kontrollbox für KI-Vorschläge (Fotoerkennung, Preisschätzung): zeigt die
+   erkannten Werte an, bevor sie per "Übernehmen" tatsächlich uebernommen
+   bzw. gespeichert werden. */
+.ai-review {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; margin-top: 10px;
+}
+.ai-review h4 { margin: 0 0 8px; font-size: 0.9rem; font-family: var(--font-display); color: var(--text); }
+.ai-review-body { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.ai-review-row { display: flex; gap: 8px; font-size: 0.85rem; }
+.ai-review-label { flex: 0 0 90px; color: var(--text-muted); }
+.ai-review-value { color: var(--text); font-weight: 600; }
+.ai-review-actions { display: flex; align-items: center; gap: 10px; }
+.btn-link {
+  background: none; border: none; padding: 4px 2px; color: var(--text-muted);
+  text-decoration: underline; cursor: pointer; font-size: 0.85rem; font-family: inherit;
+}
+.btn-link:hover { color: var(--text); }
+#delete-form { align-self: flex-start; }
+
+#import-text { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: var(--card); color: var(--text); }
+.import-review { margin-top: 24px; }
+.import-review h2 { font-size: 1.1rem; margin-bottom: 12px; }
+.table-scroll { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; }
+.import-table { border-collapse: collapse; width: 100%; min-width: 820px; }
+.import-table th {
+  text-align: left; font-size: 0.75rem; color: var(--text-muted); font-weight: 600;
+  padding: 8px 8px; border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.import-table td { padding: 4px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.import-table tr:last-child td { border-bottom: none; }
+.import-table input, .import-table select {
+  width: 100%; padding: 6px 7px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 0.85rem; font-family: inherit; background: var(--card); color: var(--text);
+}
+.import-table input[type=number] { width: 90px; }
+.import-table input[type=checkbox] { width: auto; }
+.import-row-remove {
+  background: none; border: none; color: var(--neg); cursor: pointer; font-size: 0.95rem; padding: 4px;
+}
+.import-row.excluded { opacity: 0.45; }
+
+/* Kombifeld: echtes <select> (wie beim Typ-Feld, auf dem Handy also der native
+   Picker) + ein Textfeld fuer "Eigener Text", das nur bei Bedarf eingeblendet wird. */
+.combo-wrap { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.combo-select, .combo-text { width: 100%; }
+
+@media (max-width: 640px) {
+  .field-grid { grid-template-columns: 1fr; }
+  .topbar { flex-direction: column; align-items: flex-start; }
+}
+
+/* ===================================================================
+   Produkt-Tracker: zusätzliche Komponenten
+   =================================================================== */
+.item-card {
+  display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; text-decoration: none; color: var(--text);
+  box-shadow: var(--shadow-sm); transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.item-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.item-photo { aspect-ratio: 4/3; background: var(--photo-bg); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.item-photo img { width: 100%; height: 100%; object-fit: cover; }
+.photo-placeholder { font-size: 2rem; opacity: 0.5; }
+.item-card-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; }
+.item-card-title { font-family: var(--font-display); font-weight: 600; font-size: 0.98rem; }
+.item-card-sub { font-size: 0.82rem; color: var(--text-muted); }
+.item-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.85rem; }
+.bestand-badge { background: var(--surface-2); color: var(--text); border-radius: 999px; padding: 2px 10px; font-size: 0.78rem; }
+.bestand-badge.bestand-low { background: var(--neg); color: #fff; }
+
+.storage-group { margin-bottom: 28px; }
+.storage-group h2 { font-size: 1.05rem; margin-bottom: 12px; }
+
+.stat-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow-sm);
+}
+.stat-label { font-size: 0.78rem; color: var(--text-muted); }
+.stat-value { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; }
+
+.dashboard-link {
+  display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); color: var(--text);
+  border: none; border-radius: 999px; padding: 8px 16px; font-size: 0.88rem; cursor: pointer; text-decoration: none;
+}
+
+#preise-table th, #preise-table td { text-align: left; }
